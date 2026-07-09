@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Tracker — Statistiques</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1 style="font-size:20px;">📓 Life Tracker</h1>
+      <span class="mark">carnet perso</span>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Aujourd'hui</a>
+      <a href="dashboard.html" class="active">Statistiques</a>
+      <a href="import.html">Import / Export</a>
+      <a href="settings.html">Réglages</a>
+    </nav>
+    <button class="icon-btn" id="theme-toggle">🌙 Sombre</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Vue d'ensemble</h2>
+      <div style="display:flex; gap:8px;">
+        <select id="month-select" class="btn btn-sm"></select>
+        <select id="year-select" class="btn btn-sm"></select>
+      </div>
+    </div>
+    <div class="grid grid-4" id="top-cards"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><h2>Calendrier annuel</h2><p class="subtitle">Assiduité jour par jour, comme un GitHub contributions.</p></div>
+    <div id="heatmap"></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="panel">
+      <div class="panel-header"><h2>Remplissage du mois</h2></div>
+      <div id="month-bar"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h2>Note quotidienne</h2></div>
+      <div id="rating-line"></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="panel">
+      <div class="panel-header"><h2>Radar des habitudes</h2><p class="subtitle">% de réussite par catégorie ce mois-ci.</p></div>
+      <div id="radar" style="display:flex; justify-content:center;"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h2>Répartition par catégorie</h2></div>
+      <div style="display:flex; justify-content:center;"><div id="donut" style="max-width:220px;"></div></div>
+      <div id="donut-legend" class="chart-legend" style="justify-content:center;"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><h2>Détail par indicateur</h2></div>
+    <table class="simple">
+      <thead><tr><th>Indicateur</th><th>%</th><th>Réussi</th><th>Série actuelle</th><th>Meilleure série</th></tr></thead>
+      <tbody id="indicator-table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="panel">
+      <div class="panel-header"><h3>Les plus régulières</h3></div>
+      <ul id="most-regular" style="margin:0; padding-left:18px;"></ul>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h3>Les moins régulières</h3></div>
+      <ul id="least-regular" style="margin:0; padding-left:18px;"></ul>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h3>Records de séries</h3></div>
+      <ul id="records" style="margin:0; padding-left:18px;"></ul>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="panel">
+      <div class="panel-header"><h3 id="cmp-month-label">vs mois précédent</h3></div>
+      <table class="simple">
+        <thead><tr><th>Indicateur</th><th>Ce mois</th><th>Préc.</th><th>Écart</th></tr></thead>
+        <tbody id="cmp-month"></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h3 id="cmp-year-label">vs année précédente</h3></div>
+      <table class="simple">
+        <thead><tr><th>Indicateur</th><th>Cette année</th><th>Préc.</th><th>Écart</th></tr></thead>
+        <tbody id="cmp-year"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header"><h2>Recherche dans les commentaires</h2></div>
+    <div class="search-box"><span>🔍</span><input id="search-input" placeholder="Rechercher un mot…"></div>
+    <div id="search-results"></div>
+  </div>
+
+  <footer class="app-footer">Statistiques calculées automatiquement à partir de tes données.</footer>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/dateutils.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/indicators.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

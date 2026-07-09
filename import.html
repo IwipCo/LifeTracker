@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Tracker — Import / Export</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1 style="font-size:20px;">📓 Life Tracker</h1>
+      <span class="mark">carnet perso</span>
+    </div>
+    <nav class="nav-links">
+      <a href="index.html">Aujourd'hui</a>
+      <a href="dashboard.html">Statistiques</a>
+      <a href="import.html" class="active">Import / Export</a>
+      <a href="settings.html">Réglages</a>
+    </nav>
+    <button class="icon-btn" id="theme-toggle">🌙 Sombre</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div><h2>Exporter mes données</h2><p class="subtitle">Génère un vrai fichier, à garder de ton côté (l'app ne stocke rien sur un serveur).</p></div>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary" id="btn-export-json">⬇️ Export JSON (données)</button>
+      <button class="btn" id="btn-export-csv">⬇️ Export CSV (données)</button>
+      <button class="btn" id="btn-export-config">⬇️ Export JSON (configuration)</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div><h2>Importer un fichier JSON déjà exporté</h2><p class="subtitle">Remplace ou fusionne avec les données actuelles.</p></div>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn" id="btn-import-merge">🔀 Fusionner un fichier JSON</button>
+      <button class="btn" id="btn-import-replace">♻️ Remplacer par un fichier JSON</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div><h2>Assistant d'import Notion (CSV)</h2><p class="subtitle">Migration ponctuelle depuis un export CSV Notion.</p></div>
+    </div>
+
+    <div id="step-file">
+      <p>Exporte ta base Notion en CSV (··· → Export → CSV), puis charge-la ici.</p>
+      <button class="btn btn-primary" id="btn-pick-csv">📄 Choisir un fichier CSV</button>
+    </div>
+
+    <div id="step-map" style="display:none;">
+      <h3>1. Associer les colonnes</h3>
+      <p class="subtitle">Pour chaque colonne du CSV, indique à quel indicateur elle correspond (ou "Ignorer").</p>
+      <div id="mapping-list" class="day-entry-list"></div>
+      <div style="margin-top:14px;"><button class="btn btn-primary" id="btn-to-preview">Continuer →</button></div>
+    </div>
+
+    <div id="step-preview" style="display:none;">
+      <h3>2. Prévisualisation</h3>
+      <p id="preview-summary" class="subtitle"></p>
+      <div class="ledger-wrap"><table class="simple" id="preview-table"></table></div>
+      <div style="margin-top:14px;"><button class="btn btn-primary" id="btn-confirm-import">✅ Confirmer l'import</button></div>
+    </div>
+
+    <div id="step-done" style="display:none;" class="empty-state">
+      <p>🎉 Import terminé. Retourne à <a href="index.html">Aujourd'hui</a> ou <a href="dashboard.html">Statistiques</a>.</p>
+      <button class="btn" id="btn-restart-import">Importer un autre fichier</button>
+    </div>
+  </div>
+
+  <footer class="app-footer">Astuce : exporte régulièrement tes données pour éviter toute perte si tu vides le cache du navigateur.</footer>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/dateutils.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/indicators.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  await ConfigStore.load();
+  document.getElementById("btn-export-json").onclick = () => DataStore.exportJSON();
+  document.getElementById("btn-export-csv").onclick = () => DataStore.exportCSV();
+  document.getElementById("btn-export-config").onclick = () => DataStore.exportConfigJSON();
+  document.getElementById("btn-import-merge").onclick = () => {
+    UI.pickFile("application/json", (content) => {
+      try { DataStore.mergeImportJSON(content); UI.toast("Données fusionnées avec succès."); }
+      catch (e) { UI.toast("Erreur : " + e.message); }
+    });
+  };
+  document.getElementById("btn-import-replace").onclick = () => {
+    if (!confirm("Ceci va remplacer toutes les données actuelles. Continuer ?")) return;
+    UI.pickFile("application/json", (content) => {
+      try { DataStore.importJSON(content); UI.toast("Données remplacées avec succès."); }
+      catch (e) { UI.toast("Erreur : " + e.message); }
+    });
+  };
+});
+</script>
+<script src="js/csvimport.js"></script>
+</body>
+</html>
