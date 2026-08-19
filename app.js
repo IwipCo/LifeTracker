@@ -269,7 +269,9 @@ function buildTrackerTableHTML(days){
   html += '<th>%</th></tr></thead><tbody>';
   groupActivitiesByCategory().forEach(group => {
     if(group.activities.length === 0) return;
-    html += `<tr class="cat-row"><td colspan="${days.length + 2}"${categoryHeaderStyle(group.color)}>${escapeHtml(group.name)}</td></tr>`;
+    html += `<tr class="cat-row"><td class="act-col cat-row-label"${categoryHeaderStyle(group.color)}>${escapeHtml(group.name)}</td>` +
+      days.map(() => `<td class="cat-row-fill"${categoryHeaderStyle(group.color)}></td>`).join('') +
+      `<td class="cat-row-fill"${categoryHeaderStyle(group.color)}></td></tr>`;
     group.activities.forEach(act => {
       html += `<tr><td class="act-col" title="${escapeHtml(act.name)}">${activityLabelHtml(act)}</td>`;
       days.forEach(d => {
@@ -1177,8 +1179,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn => {
     if(v === 'month') renderGrid();
     if(v === 'heatmap'){ renderHeatmapControls(); renderHeatmap(); }
     if(v === 'stats') renderStats();
-    if(v === 'manage') renderManage();
-    if(v === 'settings') fillSettingsForm();
+    if(v === 'settings'){ fillSettingsForm(); renderManage(); }
   });
 });
 document.getElementById('btnOpenSettings').addEventListener('click', () => {
