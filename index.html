@@ -100,10 +100,16 @@
   #app{max-width:1180px; margin:0 auto; padding:0 16px 60px;}
 
   header.top{display:flex; align-items:center; justify-content:space-between; padding:18px 0 10px; gap:12px; flex-wrap:wrap;}
-  .brand{display:flex; align-items:center; gap:10px;}
+  .brand{display:flex; align-items:center; gap:10px; cursor:pointer; border-radius:8px; padding:4px; margin:-4px;}
+  .brand:hover{background:var(--teal-soft);}
   .brand .mark{width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
   .brand .mark svg{width:100%; height:100%; display:block;}
   .brand h1{font-size:19px;}
+  .theme-switch{border:none; background:none; padding:0; cursor:pointer; display:inline-flex; align-items:center;}
+  .theme-switch-track{width:48px; height:27px; border-radius:14px; background:var(--line); position:relative; transition:background .2s; flex-shrink:0;}
+  .theme-switch-thumb{position:absolute; top:2px; left:2px; width:23px; height:23px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.35); transition:transform .2s; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1;}
+  [data-theme="dark"] .theme-switch-track{background:var(--teal);}
+  [data-theme="dark"] .theme-switch-thumb{transform:translateX(21px);}
   .sync-status{font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
   .sync-dot{width:8px; height:8px; border-radius:50%; background:#9AA8A4; flex-shrink:0;}
   .sync-dot.ok{background:var(--teal);}
@@ -111,7 +117,7 @@
   .sync-dot.err{background:var(--red);}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 
-  nav.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:18px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  nav.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:18px; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; top:0; background:var(--bg); z-index:20;}
   nav.tabs button{border:none; border-radius:0; background:none; padding:10px 14px; color:var(--ink-soft); font-weight:600; border-bottom:2px solid transparent; white-space:nowrap;}
   nav.tabs button:hover{background:var(--teal-soft); color:var(--ink);}
   nav.tabs button.active{color:var(--teal-dark); border-bottom-color:var(--teal);}
@@ -244,7 +250,7 @@
 <div id="app">
 
   <header class="top">
-    <div class="brand">
+    <div class="brand" id="brandHome" role="button" tabindex="0" title="Retour à aujourd'hui" aria-label="Retour à aujourd'hui">
       <div class="mark" aria-hidden="true">
         <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
           <rect x="1" y="1" width="38" height="38" rx="10" fill="#1F6F5C"/>
@@ -259,7 +265,9 @@
     </div>
     <div class="row">
       <span class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Non configuré</span></span>
-      <button class="ghost icon-btn" id="themeToggle" title="Changer de thème">🌙</button>
+      <button class="theme-switch" id="themeToggle" role="switch" aria-checked="true" title="Changer de thème">
+        <span class="theme-switch-track"><span class="theme-switch-thumb">🌙</span></span>
+      </button>
       <button class="ghost" id="btnOpenSettings" title="Paramètres">⚙ Paramètres</button>
     </div>
   </header>
