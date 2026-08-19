@@ -97,9 +97,9 @@
   h1,h2,h3{margin:0 0 4px; letter-spacing:-.01em;}
   a{color:var(--teal-dark);}
 
-  #app{max-width:1180px; margin:0 auto; padding:0 16px 60px;}
+  #app{max-width:1180px; margin:0 auto; padding:0 max(16px, env(safe-area-inset-right)) max(60px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));}
 
-  header.top{display:flex; align-items:center; justify-content:space-between; padding:18px 0 10px; gap:12px; flex-wrap:wrap;}
+  header.top{display:flex; align-items:center; justify-content:space-between; padding:max(18px, env(safe-area-inset-top)) 0 10px; gap:12px; flex-wrap:wrap;}
   .brand{display:flex; align-items:center; gap:10px; cursor:pointer; border-radius:8px; padding:4px; margin:-4px;}
   .brand:hover{background:var(--teal-soft);}
   .brand .mark{width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
@@ -117,7 +117,7 @@
   .sync-dot.err{background:var(--red);}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 
-  nav.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:18px; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; top:0; background:var(--bg); z-index:20;}
+  nav.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:18px; overflow-x:auto; -webkit-overflow-scrolling:touch; position:sticky; top:0; padding-top:env(safe-area-inset-top); background:var(--bg); z-index:20;}
   nav.tabs button{border:none; border-radius:0; background:none; padding:10px 14px; color:var(--ink-soft); font-weight:600; border-bottom:2px solid transparent; white-space:nowrap;}
   nav.tabs button:hover{background:var(--teal-soft); color:var(--ink);}
   nav.tabs button.active{color:var(--teal-dark); border-bottom-color:var(--teal);}
@@ -147,7 +147,8 @@
   table.tracker thead th .dow{display:block; font-weight:400; font-size:9.5px; text-transform:uppercase;}
   table.tracker th.act-col, table.tracker td.act-col{position:sticky; left:0; background:var(--panel); z-index:1; text-align:left; padding:9px 12px; font-size:13px; min-width:170px; max-width:220px; overflow:hidden; text-overflow:ellipsis; border-right:1px solid var(--line);}
   table.tracker thead th.act-col{z-index:3;}
-  tr.cat-row td{background:var(--teal-soft); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--teal-dark); text-align:left; padding:7px 12px; position:sticky; left:0;}
+  tr.cat-row td.cat-row-label{background:var(--teal-soft); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--teal-dark);}
+  tr.cat-row td.cat-row-fill{background:var(--teal-soft); padding:0;}
   td.day-cell{padding:2px; width:34px;}
   td.day-cell.weekend{background:var(--weekend-bg);}
   td.day-cell.today-col{background:var(--today-bg);}
@@ -280,7 +281,6 @@
     <button data-view="month">Mois</button>
     <button data-view="heatmap">Heatmap</button>
     <button data-view="stats">Statistiques</button>
-    <button data-view="manage">Catégories &amp; activités</button>
     <button data-view="settings">Paramètres</button>
   </nav>
 
@@ -388,37 +388,33 @@
     </div>
   </section>
 
-  <!-- MANAGE VIEW -->
-  <section class="view" id="view-manage">
-    <div class="grid-2">
-      <div class="panel">
-        <h2>Catégories</h2>
-        <div class="catlist" id="catList"></div>
-        <div class="row" style="margin-top:12px;">
-          <input type="text" id="newCatName" placeholder="Nom de la catégorie">
-          <input type="color" id="newCatColor" value="#1F6F5C">
-          <button id="addCatBtn" class="primary tiny-btn">Ajouter</button>
-        </div>
+  <!-- SETTINGS VIEW -->
+  <section class="view" id="view-settings">
+    <div class="panel">
+      <h2>Catégories</h2>
+      <div class="catlist" id="catList"></div>
+      <div class="row" style="margin-top:12px;">
+        <input type="text" id="newCatName" placeholder="Nom de la catégorie">
+        <input type="color" id="newCatColor" value="#1F6F5C">
+        <button id="addCatBtn" class="primary tiny-btn">Ajouter</button>
       </div>
-      <div class="panel">
-        <h2>Activités</h2>
-        <p class="hint">Objectif : par défaut « tous les jours ». Change-le pour « X fois / semaine » ou « X fois / mois » si besoin.</p>
-        <div class="actlist" id="actList"></div>
-        <div class="stack" style="margin-top:12px;">
-          <div class="row">
-            <input type="text" id="newActName" placeholder="Nom de l'activité" style="flex:1;">
-          </div>
-          <div class="row">
-            <select id="newActCat" style="flex:1;"></select>
-            <button id="addActBtn" class="primary tiny-btn">Ajouter</button>
-          </div>
+    </div>
+
+    <div class="panel">
+      <h2>Activités</h2>
+      <p class="hint">Objectif : par défaut « tous les jours ». Change-le pour « X fois / semaine » ou « X fois / mois » si besoin.</p>
+      <div class="actlist" id="actList"></div>
+      <div class="stack" style="margin-top:12px;">
+        <div class="row">
+          <input type="text" id="newActName" placeholder="Nom de l'activité" style="flex:1;">
+        </div>
+        <div class="row">
+          <select id="newActCat" style="flex:1;"></select>
+          <button id="addActBtn" class="primary tiny-btn">Ajouter</button>
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- SETTINGS VIEW -->
-  <section class="view" id="view-settings">
     <div class="panel">
       <h2>Synchronisation GitHub</h2>
       <p class="hint">Sauvegarde automatique vers un dépôt GitHub séparé du code. Token « fine-grained » limité à ce dépôt, permission Contents: Read/write.</p>
