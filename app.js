@@ -421,6 +421,18 @@ function renderWeek(){
     : buildTrackerTableHTML(days);
   renderWeekCompare();
 }
+function computeSimpleRate(activity, days){
+  const todayISO = isoDate(new Date());
+  let checked = 0, total = 0;
+  days.forEach(d => {
+    const iso = isoDate(d);
+    if(iso > todayISO) return;
+    total++;
+    if(isChecked_(iso, activity.id)) checked++;
+  });
+  const pct = total > 0 ? Math.round(checked/total*100) : null;
+  return { checked, total, pct };
+}
 function renderWeekCompare(){
   const wrap = document.getElementById('weekCompareWrap');
   if(DATA.activities.length === 0){ wrap.innerHTML = '<p class="hint">Aucune activité.</p>'; return; }
@@ -430,8 +442,8 @@ function renderWeekCompare(){
   let html = '<table class="stats"><thead><tr><th>Activité</th><th>Semaine dernière</th><th>Cette semaine</th><th></th></tr></thead><tbody>';
   groupActivitiesByCategory().forEach(g => {
     g.activities.forEach(act => {
-      const stPrev = computeRowStats(act, lastWeek);
-      const stCur = computeRowStats(act, thisWeek);
+      const stPrev = computeSimpleRate(act, lastWeek);
+      const stCur = computeSimpleRate(act, thisWeek);
       html += `<tr><td>${escapeHtml(act.name)}</td>
         <td class="num">${stPrev.pct != null ? stPrev.pct + '%' : '—'}</td>
         <td class="num">${stCur.pct != null ? stCur.pct + '%' : '—'}</td>
