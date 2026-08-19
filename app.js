@@ -94,6 +94,28 @@ function isoDate(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' +
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function hexToRgba(hex, alpha){
+  if(!hex) return `rgba(148,164,158,${alpha})`;
+  let h = hex.replace('#','');
+  if(h.length === 3) h = h.split('').map(c => c+c).join('');
+  const bigint = parseInt(h, 16);
+  if(isNaN(bigint)) return `rgba(148,164,158,${alpha})`;
+  const r = (bigint>>16)&255, g = (bigint>>8)&255, b = bigint&255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function categoryColorFor(categoryId){
+  const cat = DATA.categories.find(c => c.id === categoryId);
+  return cat ? cat.color : null;
+}
+function dotHtml(color){
+  return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color || 'var(--ink-soft)'};margin-right:7px;flex-shrink:0;vertical-align:middle;"></span>`;
+}
+function activityLabelHtml(act){
+  return dotHtml(categoryColorFor(act.categoryId)) + escapeHtml(act.name);
+}
+function categoryHeaderStyle(color){
+  return color ? ` style="background:${hexToRgba(color,0.18)}; color:${color};"` : '';
+}
 function daysOfMonth(y,m){
   const n = new Date(y, m+1, 0).getDate();
   const arr = [];
@@ -166,7 +188,11 @@ function loadTheme(){
 function applyTheme(theme){
   document.documentElement.dataset.theme = theme;
   const btn = document.getElementById('themeToggle');
-  if(btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  if(btn){
+    btn.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');
+    const thumb = btn.querySelector('.theme-switch-thumb');
+    if(thumb) thumb.textContent = theme === 'dark' ? '🌙' : '☀️';
+  }
   const meta = document.querySelector('meta[name="theme-color"]');
   if(meta) meta.setAttribute('content', theme === 'dark' ? '#0E1513' : '#EEF2F0');
   try{ localStorage.setItem(LS_THEME, theme); }catch(e){}
@@ -223,11 +249,11 @@ function deltaBadge(prev, cur){
 /* ===================== Groupement par catégorie ===================== */
 function groupActivitiesByCategory(){
   const groups = DATA.categories.map(c => ({
-    id: c.id, name: c.name,
+    id: c.id, name: c.name, color: c.color,
     activities: DATA.activities.filter(a => a.categoryId === c.id)
   }));
   const orphan = DATA.activities.filter(a => !DATA.categories.find(c => c.id === a.categoryId));
-  if(orphan.length) groups.push({ id: null, name: 'Sans catégorie', activities: orphan });
+  if(orphan.length) groups.push({ id: null, name: 'Sans catégorie', color: null, activities: orphan });
   return groups;
 }
 
@@ -243,9 +269,9 @@ function buildTrackerTableHTML(days){
   html += '<th>%</th></tr></thead><tbody>';
   groupActivitiesByCategory().forEach(group => {
     if(group.activities.length === 0) return;
-    html += `<tr class="cat-row"><td colspan="${days.length + 2}">${escapeHtml(group.name)}</td></tr>`;
+    html += `<tr class="cat-row"><td colspan="${days.length + 2}"${categoryHeaderStyle(group.color)}>${escapeHtml(group.name)}</td></tr>`;
     group.activities.forEach(act => {
-      html += `<tr><td class="act-col" title="${escapeHtml(act.name)}">${escapeHtml(act.name)}</td>`;
+      html += `<tr><td class="act-col" title="${escapeHtml(act.name)}">${activityLabelHtml(act)}</td>`;
       days.forEach(d => {
         const iso = isoDate(d);
         const isWeekend = (d.getDay() === 0 || d.getDay() === 6);
@@ -328,10 +354,10 @@ function renderDay(){
     let html = '';
     groupActivitiesByCategory().forEach(group => {
       if(group.activities.length === 0) return;
-      html += `<div class="day-cat-header">${escapeHtml(group.name)}</div>`;
+      html += `<div class="day-cat-header"${categoryHeaderStyle(group.color)}>${escapeHtml(group.name)}</div>`;
       group.activities.forEach(act => {
         const checked = isChecked_(iso, act.id);
-        html += `<div class="day-row"><div class="chk-lg ${checked ? 'on' : ''} ${isFuture ? 'future' : ''}" data-act="${act.id}" role="checkbox" aria-checked="${checked}" tabindex="${isFuture ? '-1' : '0'}"></div><span class="act-label">${escapeHtml(act.name)}</span></div>`;
+        html += `<div class="day-row"><div class="chk-lg ${checked ? 'on' : ''} ${isFuture ? 'future' : ''}" data-act="${act.id}" role="checkbox" aria-checked="${checked}" tabindex="${isFuture ? '-1' : '0'}"></div><span class="act-label">${activityLabelHtml(act)}</span></div>`;
       });
     });
     list.innerHTML = html;
@@ -341,6 +367,8 @@ function renderDay(){
   document.getElementById('dayNoteStars').innerHTML = [1,2,3,4,5].map(n =>
     `<span class="star ${note && n <= note ? 'on' : ''}" data-val="${n}">★</span>`).join('');
   document.getElementById('dayComment').value = day ? (day.comment || '') : '';
+  document.getElementById('dupYesterdayBtn').textContent =
+    (iso === isoDate(new Date())) ? '⤵ Dupliquer hier' : '⤵ Dupliquer la veille';
 }
 function toggleDayCheck(iso, actId){
   if(iso > isoDate(new Date())) return;
@@ -444,7 +472,7 @@ function renderWeekCompare(){
     g.activities.forEach(act => {
       const stPrev = computeSimpleRate(act, lastWeek);
       const stCur = computeSimpleRate(act, thisWeek);
-      html += `<tr><td>${escapeHtml(act.name)}</td>
+      html += `<tr><td>${activityLabelHtml(act)}</td>
         <td class="num">${stPrev.pct != null ? stPrev.pct + '%' : '—'}</td>
         <td class="num">${stCur.pct != null ? stCur.pct + '%' : '—'}</td>
         <td>${deltaBadge(stPrev.pct, stCur.pct)}</td></tr>`;
@@ -585,7 +613,7 @@ function renderOverview(){
   groupActivitiesByCategory().forEach(g => {
     g.activities.forEach(act => {
       const st = computeRowStats(act, days);
-      html += `<tr><td>${escapeHtml(act.name)}</td><td><div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${st.pct ?? 0}%"></div></div><span class="val">${st.pct != null ? st.pct + '%' : '—'}</span></div></td></tr>`;
+      html += `<tr><td>${activityLabelHtml(act)}</td><td><div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${st.pct ?? 0}%"></div></div><span class="val">${st.pct != null ? st.pct + '%' : '—'}</span></div></td></tr>`;
     });
   });
   html += '</tbody></table>';
@@ -603,7 +631,7 @@ function renderPrevMonthCompare(){
     g.activities.forEach(act => {
       const stPrev = computeRowStats(act, prevDays);
       const stCur = computeRowStats(act, curDays);
-      html += `<tr><td>${escapeHtml(act.name)}</td><td class="num">${stPrev.pct != null ? stPrev.pct + '%' : '—'}</td><td class="num">${stCur.pct != null ? stCur.pct + '%' : '—'}</td><td>${deltaBadge(stPrev.pct, stCur.pct)}</td></tr>`;
+      html += `<tr><td>${activityLabelHtml(act)}</td><td class="num">${stPrev.pct != null ? stPrev.pct + '%' : '—'}</td><td class="num">${stCur.pct != null ? stCur.pct + '%' : '—'}</td><td>${deltaBadge(stPrev.pct, stCur.pct)}</td></tr>`;
     });
   });
   html += '</tbody></table>';
@@ -618,7 +646,7 @@ function renderYearCompare(){
   let html = '<table class="stats"><thead><tr><th>Activité</th>' + years.map(y => `<th>${y}</th>`).join('') + '</tr></thead><tbody>';
   groupActivitiesByCategory().forEach(g => {
     g.activities.forEach(act => {
-      html += `<tr><td>${escapeHtml(act.name)}</td>`;
+      html += `<tr><td>${activityLabelHtml(act)}</td>`;
       years.forEach(y => {
         if(new Date(y, month, 1) > now){ html += '<td class="num">—</td>'; return; }
         const st = computeRowStats(act, daysOfMonth(y, month));
@@ -1155,6 +1183,18 @@ document.querySelectorAll('nav.tabs button').forEach(btn => {
 });
 document.getElementById('btnOpenSettings').addEventListener('click', () => {
   document.querySelector('nav.tabs button[data-view="settings"]').click();
+});
+function goHomeToday(){
+  dayDate = new Date();
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  document.querySelector('nav.tabs button[data-view="day"]').classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-day').classList.add('active');
+  renderDay();
+}
+document.getElementById('brandHome').addEventListener('click', goHomeToday);
+document.getElementById('brandHome').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goHomeToday(); }
 });
 
 /* ===================== Rendu global & init ===================== */
