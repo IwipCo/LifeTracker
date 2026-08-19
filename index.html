@@ -175,9 +175,10 @@
 
   /* Stats */
   table.stats{width:100%; border-collapse:collapse; font-size:13.5px;}
-  table.stats th, table.stats td{text-align:left; padding:7px 8px; border-bottom:1px solid var(--line);}
+  table.stats th, table.stats td{text-align:center; padding:7px 8px; border-bottom:1px solid var(--line);}
+  table.stats th:first-child, table.stats td:first-child{text-align:left;}
   table.stats th{color:var(--ink-soft); font-weight:600; font-size:12px;}
-  table.stats td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  table.stats td.num{text-align:center; font-variant-numeric:tabular-nums;}
   .bar-track{background:var(--teal-soft); border-radius:5px; height:8px; width:100%; overflow:hidden;}
   .bar-fill{background:var(--teal); height:100%; border-radius:5px;}
   .bar-cell{display:flex; align-items:center; gap:8px;}
@@ -199,7 +200,8 @@
   #csvMapTable{width:100%; border-collapse:collapse; font-size:13px;}
   #csvMapTable th, #csvMapTable td{padding:6px 8px; border-bottom:1px solid var(--line); text-align:left;}
   #csvPreview{width:100%; border-collapse:collapse; font-size:12px; margin-top:8px;}
-  #csvPreview th, #csvPreview td{padding:4px 6px; border:1px solid var(--line); white-space:nowrap;}
+  #csvPreview th, #csvPreview td{padding:4px 6px; border:1px solid var(--line); white-space:nowrap; text-align:center;}
+  #csvPreview th:first-child, #csvPreview td:first-child{text-align:left;}
   #csvPreview td.yes{color:var(--teal-dark); font-weight:700;}
   #csvPreview td.no{color:var(--ink-soft);}
 
@@ -226,7 +228,15 @@
   @media (max-width:640px){
     .grid-2{grid-template-columns:1fr;}
     .brand h1{font-size:17px;}
+    table.tracker th.act-col, table.tracker td.act-col{min-width:96px; max-width:96px; padding:8px 6px; font-size:12px;}
+    table.tracker thead th{font-size:10px; padding:7px 2px;}
+    table.tracker thead th .dow{font-size:8.5px;}
+    td.day-cell{width:28px;}
+    .chk{width:21px; height:21px; margin:4px auto;}
+    td.pct-col{min-width:34px; font-size:10.5px; padding:0 6px 0 3px;}
+    .scroll-hint{display:block !important;}
   }
+  .scroll-hint{display:none; text-align:center; margin:6px 2px 0;}
 
 </style>
 </head>
@@ -307,6 +317,7 @@
       </div>
     </div>
     <div class="grid-scroll"><div id="weekGridContainer"></div></div>
+    <p class="hint scroll-hint">👉 Fais glisser horizontalement pour voir les autres jours</p>
     <div class="panel">
       <h2>Cette semaine vs semaine dernière</h2>
       <div id="weekCompareWrap"></div>
@@ -329,6 +340,7 @@
       </div>
     </div>
     <div class="grid-scroll"><div id="gridContainer"></div></div>
+    <p class="hint scroll-hint">👉 Fais glisser horizontalement pour voir les autres jours</p>
   </section>
 
   <!-- HEATMAP VIEW -->
