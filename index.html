@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Life Tracker</title>
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('habitudes_theme');
+    document.documentElement.dataset.theme = (t === 'light') ? 'light' : 'dark';
+  }catch(e){ document.documentElement.dataset.theme = 'dark'; }
+})();
+</script>
+<meta name="theme-color" content="#0E1513">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Life Tracker">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    color-scheme: dark;
+    --radius:10px;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    /* Palette sombre (par défaut) */
+    --bg:#0E1513;
+    --panel:#161F1D;
+    --input-bg:#1E2926;
+    --ink:#E8EFEC;
+    --ink-soft:#93A9A3;
+    --line:#283532;
+    --teal:#2FA374;
+    --teal-hover:#26855F;
+    --teal-dark:#6FE0AE;
+    --teal-soft:#16332A;
+    --amber:#D89A4A;
+    --red:#E08787;
+    --star-off:#3A4A45;
+    --danger-hover-bg:#3A1E1E;
+    --weekend-bg:#1A211E;
+    --today-bg:#16302A;
+    --warn-bg:#3A2E14; --warn-border:#6B5323; --warn-text:#E8C88A;
+    --err-bg:#3A1E1E; --err-border:#6B3535; --err-text:#F0A8A8;
+    --delta-up-bg:#173B2C; --delta-up-text:#7FE3B4;
+    --delta-down-bg:#3B1E1E; --delta-down-text:#F0A0A0;
+    --toast-bg:#E8EFEC; --toast-text:#12181A;
+  }
+  :root[data-theme="light"]{
+    color-scheme: light;
+    --bg:#EEF2F0;
+    --panel:#FFFFFF;
+    --input-bg:#FFFFFF;
+    --ink:#152A26;
+    --ink-soft:#4B615C;
+    --line:#DCE4E1;
+    --teal:#1F6F5C;
+    --teal-hover:#154F41;
+    --teal-dark:#154F41;
+    --teal-soft:#E4F0EC;
+    --amber:#C7862B;
+    --red:#B24444;
+    --star-off:#DCE4E1;
+    --danger-hover-bg:#FBEBEB;
+    --weekend-bg:#F7F5EE;
+    --today-bg:#EAF3EF;
+    --warn-bg:#FBF2E3; --warn-border:#E8C88A; --warn-text:#7A5416;
+    --err-bg:#FBEBEB; --err-border:#E8AFAF; --err-text:#7A2222;
+    --delta-up-bg:#E1F1E7; --delta-up-text:#186B4A;
+    --delta-down-bg:#FBEAEA; --delta-down-text:#9A3B3B;
+    --toast-bg:#152A26; --toast-text:#FFFFFF;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:15px; -webkit-font-smoothing:antialiased; transition:background .15s, color .15s;}
+  button{font-family:inherit; font-size:14px; cursor:pointer; border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:8px; padding:8px 12px; transition:background .12s, border-color .12s;}
+  button:hover{border-color:var(--teal);}
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+  button.primary{background:var(--teal); border-color:var(--teal); color:#fff; font-weight:600;}
+  button.primary:hover{background:var(--teal-hover);}
+  button.danger{border-color:var(--red); color:var(--red); background:var(--panel);}
+  button.danger:hover{background:var(--danger-hover-bg);}
+  button:disabled{opacity:.5; cursor:not-allowed;}
+  button.ghost{background:transparent; border-color:transparent;}
+  button.ghost:hover{background:var(--teal-soft);}
+  button.icon-btn{width:36px; height:36px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:16px;}
+  input[type=text], input[type=password], input[type=number], input[type=date], select, textarea{
+    font-family:inherit; font-size:14px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--input-bg); color:var(--ink);
+  }
+  input[type=color]{border:1px solid var(--line); border-radius:8px; padding:2px; height:34px; width:44px; background:var(--input-bg);}
+  textarea{font-family:var(--font-mono); font-size:12.5px;}
+  label{font-size:13px; color:var(--ink-soft); font-weight:600;}
+  h1,h2,h3{margin:0 0 4px; letter-spacing:-.01em;}
+  a{color:var(--teal-dark);}
+
+  #app{max-width:1180px; margin:0 auto; padding:0 16px 60px;}
+
+  header.top{display:flex; align-items:center; justify-content:space-between; padding:18px 0 10px; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand .mark{width:34px; height:34px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .brand .mark svg{width:100%; height:100%; display:block;}
+  .brand h1{font-size:19px;}
+  .sync-status{font-size:12.5px; color:var(--ink-soft); display:flex; align-items:center; gap:6px;}
+  .sync-dot{width:8px; height:8px; border-radius:50%; background:#9AA8A4; flex-shrink:0;}
+  .sync-dot.ok{background:var(--teal);}
+  .sync-dot.busy{background:var(--amber); animation:pulse 1s infinite;}
+  .sync-dot.err{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  nav.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:18px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  nav.tabs button{border:none; border-radius:0; background:none; padding:10px 14px; color:var(--ink-soft); font-weight:600; border-bottom:2px solid transparent; white-space:nowrap;}
+  nav.tabs button:hover{background:var(--teal-soft); color:var(--ink);}
+  nav.tabs button.active{color:var(--teal-dark); border-bottom-color:var(--teal);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:16px;}
+  .panel h2{font-size:15px;}
+  .panel .hint{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .row.between{justify-content:space-between;}
+  .row.gap-lg{gap:18px;}
+  .stack{display:flex; flex-direction:column; gap:10px;}
+  .field{display:flex; flex-direction:column; gap:4px;}
+  .field input, .field select{width:100%;}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .divider{height:1px; background:var(--line); margin:14px 0;}
+
+  /* Grid (month/week) */
+  .grid-controls{margin-bottom:12px;}
+  .grid-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); margin-bottom:16px;}
+  table.tracker{border-collapse:separate; border-spacing:0; width:100%; min-width:640px;}
+  table.tracker th, table.tracker td{border-bottom:1px solid var(--line); padding:0; text-align:center; white-space:nowrap;}
+  table.tracker thead th{position:sticky; top:0; background:var(--panel); z-index:2; padding:8px 4px; font-size:11px; color:var(--ink-soft); font-weight:600;}
+  table.tracker thead th.today{color:var(--teal-dark);}
+  table.tracker thead th .dow{display:block; font-weight:400; font-size:9.5px; text-transform:uppercase;}
+  table.tracker th.act-col, table.tracker td.act-col{position:sticky; left:0; background:var(--panel); z-index:1; text-align:left; padding:9px 12px; font-size:13px; min-width:170px; max-width:220px; overflow:hidden; text-overflow:ellipsis; border-right:1px solid var(--line);}
+  table.tracker thead th.act-col{z-index:3;}
+  tr.cat-row td{background:var(--teal-soft); font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--teal-dark); text-align:left; padding:7px 12px; position:sticky; left:0;}
+  td.day-cell{padding:2px; width:34px;}
+  td.day-cell.weekend{background:var(--weekend-bg);}
+  td.day-cell.today-col{background:var(--today-bg);}
+  .chk{width:24px; height:24px; margin:5px auto; border-radius:6px; border:1.5px solid var(--line); background:var(--input-bg); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .1s, border-color .1s;}
+  .chk:hover{border-color:var(--teal);}
+  .chk.on{background:var(--teal); border-color:var(--teal);}
+  .chk.on::after{content:""; width:10px; height:6px; border-left:2px solid #fff; border-bottom:2px solid #fff; transform:rotate(-45deg) translateY(-1px);}
+  .chk.future{opacity:.35; cursor:not-allowed;}
+  td.pct-col{font-size:12px; color:var(--ink-soft); padding:0 10px 0 4px; min-width:48px;}
+
+  /* Day view */
+  .day-list{display:flex; flex-direction:column;}
+  .day-cat-header{font-weight:700; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--teal-dark); background:var(--teal-soft); padding:7px 12px; border-radius:6px; margin:10px 0 4px;}
+  .day-cat-header:first-child{margin-top:0;}
+  .day-row{display:flex; align-items:center; gap:14px; padding:10px 6px; border-bottom:1px solid var(--line);}
+  .day-row:last-child{border-bottom:none;}
+  .day-row .chk-lg{width:32px; height:32px; border-radius:8px; border:1.5px solid var(--line); background:var(--input-bg); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .day-row .chk-lg.on{background:var(--teal); border-color:var(--teal);}
+  .day-row .chk-lg.on::after{content:""; width:13px; height:8px; border-left:2.5px solid #fff; border-bottom:2.5px solid #fff; transform:rotate(-45deg) translateY(-1px);}
+  .day-row .act-label{font-size:14.5px;}
+  .star-picker{display:flex; gap:4px;}
+  .star-picker .star{font-size:24px; line-height:1; cursor:pointer; color:var(--star-off); user-select:none;}
+  .star-picker .star.on{color:var(--amber);}
+
+  /* Progress */
+  .progress-block{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .progress-block .big-pct{font-size:28px; font-weight:800; color:var(--teal-dark); min-width:70px;}
+  .progress-block .bar-track{flex:1; min-width:160px; background:var(--teal-soft); border-radius:6px; height:12px; overflow:hidden;}
+  .progress-block .bar-fill{background:var(--teal); height:100%; border-radius:6px;}
+  .progress-block .meta{font-size:12.5px; color:var(--ink-soft);}
+
+  /* Stats */
+  table.stats{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.stats th, table.stats td{text-align:left; padding:7px 8px; border-bottom:1px solid var(--line);}
+  table.stats th{color:var(--ink-soft); font-weight:600; font-size:12px;}
+  table.stats td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .bar-track{background:var(--teal-soft); border-radius:5px; height:8px; width:100%; overflow:hidden;}
+  .bar-fill{background:var(--teal); height:100%; border-radius:5px;}
+  .bar-cell{display:flex; align-items:center; gap:8px;}
+  .bar-cell .bar-track{flex:1;}
+  .bar-cell .val{width:40px; text-align:right; font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-soft);}
+  .delta{font-size:12.5px; font-weight:700; padding:2px 7px; border-radius:5px; display:inline-block;}
+  .delta.up{color:var(--delta-up-text); background:var(--delta-up-bg);}
+  .delta.down{color:var(--delta-down-text); background:var(--delta-down-bg);}
+  .delta.flat{color:var(--ink-soft); background:var(--teal-soft);}
+
+  /* Heatmap */
+  .heatmap-grid{display:inline-grid; grid-auto-flow:column; gap:3px;}
+  .heatmap-week{display:grid; grid-template-rows:repeat(7,12px); gap:3px;}
+  .heatmap-cell{width:12px; height:12px; border-radius:3px; background:var(--line);}
+  .heatmap-legend-scale{display:inline-flex; gap:3px; align-items:center; vertical-align:middle; margin:0 6px;}
+  .heatmap-legend-scale .sq{width:11px; height:11px; border-radius:3px;}
+
+  /* Import */
+  #csvMapTable{width:100%; border-collapse:collapse; font-size:13px;}
+  #csvMapTable th, #csvMapTable td{padding:6px 8px; border-bottom:1px solid var(--line); text-align:left;}
+  #csvPreview{width:100%; border-collapse:collapse; font-size:12px; margin-top:8px;}
+  #csvPreview th, #csvPreview td{padding:4px 6px; border:1px solid var(--line); white-space:nowrap;}
+  #csvPreview td.yes{color:var(--teal-dark); font-weight:700;}
+  #csvPreview td.no{color:var(--ink-soft);}
+
+  .banner{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; border-radius:8px; font-size:13.5px; margin-bottom:14px; border:1px solid;}
+  .banner.warn{background:var(--warn-bg); border-color:var(--warn-border); color:var(--warn-text);}
+  .banner.err{background:var(--err-bg); border-color:var(--err-border); color:var(--err-text);}
+  .banner.info{background:var(--teal-soft); border-color:var(--line); color:var(--teal-dark);}
+  .banner button{flex-shrink:0;}
+
+  .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--toast-bg); color:var(--toast-text); padding:10px 18px; border-radius:8px; font-size:13.5px; box-shadow:0 4px 18px rgba(0,0,0,.35); z-index:50; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+
+  .empty{text-align:center; padding:40px 16px; color:var(--ink-soft);}
+  .empty h3{color:var(--ink); margin-bottom:6px;}
+
+  .catlist .cat-item, .actlist .act-item{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .catlist .cat-item .cat-name-input{flex:1; min-width:120px;}
+  .actlist .act-item .act-name-input{flex:1; min-width:120px;}
+  .actlist .act-item select, .actlist .act-item input[type=number]{width:auto;}
+  .tiny-btn{font-size:12px; padding:4px 8px;}
+
+  code.small{font-size:11.5px; background:var(--teal-soft); padding:2px 5px; border-radius:4px;}
+
+  @media (max-width:640px){
+    .grid-2{grid-template-columns:1fr;}
+    .brand h1{font-size:17px;}
+  }
+
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="38" height="38" rx="10" fill="#1F6F5C"/>
+          <rect x="8" y="4" width="3" height="7" rx="1.5" fill="#EAF3EF"/>
+          <rect x="29" y="4" width="3" height="7" rx="1.5" fill="#EAF3EF"/>
+          <rect x="7" y="9" width="26" height="24" rx="4" fill="#EAF3EF"/>
+          <rect x="7" y="9" width="26" height="7" rx="4" fill="#2FA374"/>
+          <path d="M13.5 22.5 L18 27 L27 16.5" stroke="#1F6F5C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+      <div><h1>Life Tracker</h1></div>
+    </div>
+    <div class="row">
+      <span class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncText">Non configuré</span></span>
+      <button class="ghost icon-btn" id="themeToggle" title="Changer de thème">🌙</button>
+      <button class="ghost" id="btnOpenSettings" title="Paramètres">⚙ Paramètres</button>
+    </div>
+  </header>
+
+  <div id="bannerZone"></div>
+
+  <nav class="tabs">
+    <button data-view="day" class="active">Jour</button>
+    <button data-view="week">Semaine</button>
+    <button data-view="month">Mois</button>
+    <button data-view="heatmap">Heatmap</button>
+    <button data-view="stats">Statistiques</button>
+    <button data-view="manage">Catégories &amp; activités</button>
+    <button data-view="settings">Paramètres</button>
+  </nav>
+
+  <!-- DAY VIEW -->
+  <section class="view active" id="view-day">
+    <div class="panel">
+      <div class="row between">
+        <div class="row">
+          <button id="dayPrev" class="tiny-btn">◀</button>
+          <strong id="dayLabel" style="min-width:230px; text-align:center; display:inline-block;"></strong>
+          <button id="dayNext" class="tiny-btn">▶</button>
+          <button id="dayTodayBtn" class="tiny-btn ghost">Aujourd'hui</button>
+        </div>
+        <button id="dupYesterdayBtn" class="tiny-btn">⤵ Dupliquer hier</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="day-list" id="dayChecklist"></div>
+    </div>
+    <div class="panel">
+      <div class="grid-2">
+        <div class="field">
+          <label>Note du jour</label>
+          <div id="dayNoteStars" class="star-picker"></div>
+        </div>
+        <div class="field">
+          <label>Commentaire</label>
+          <textarea id="dayComment" rows="2" placeholder="Un mot sur cette journée…"></textarea>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WEEK VIEW -->
+  <section class="view" id="view-week">
+    <div class="panel">
+      <div class="row">
+        <button id="weekPrev" class="tiny-btn">◀</button>
+        <strong id="weekLabel" style="min-width:220px; text-align:center; display:inline-block;"></strong>
+        <button id="weekNext" class="tiny-btn">▶</button>
+        <button id="weekTodayBtn" class="tiny-btn ghost">Cette semaine</button>
+      </div>
+    </div>
+    <div class="grid-scroll"><div id="weekGridContainer"></div></div>
+    <div class="panel">
+      <h2>Cette semaine vs semaine dernière</h2>
+      <div id="weekCompareWrap"></div>
+    </div>
+  </section>
+
+  <!-- MONTH VIEW -->
+  <section class="view" id="view-month">
+    <div class="panel" id="monthProgressPanel"></div>
+    <div class="row between grid-controls">
+      <div class="row">
+        <button id="modeMonth" class="primary tiny-btn">Mois</button>
+        <button id="mode30" class="tiny-btn">30 derniers jours</button>
+      </div>
+      <div class="row" id="monthNav">
+        <button id="prevMonth" class="tiny-btn">◀</button>
+        <strong id="monthLabel" style="min-width:150px; text-align:center; display:inline-block;"></strong>
+        <button id="nextMonth" class="tiny-btn">▶</button>
+        <button id="todayBtn" class="tiny-btn ghost">Aujourd'hui</button>
+      </div>
+    </div>
+    <div class="grid-scroll"><div id="gridContainer"></div></div>
+  </section>
+
+  <!-- HEATMAP VIEW -->
+  <section class="view" id="view-heatmap">
+    <div class="panel">
+      <h2>Heatmap annuelle</h2>
+      <p class="hint">Vue façon calendrier : plus la case est foncée, plus le taux du jour est élevé.</p>
+      <div class="row" style="margin:10px 0;">
+        <div class="field"><label>Activité</label><select id="hmActivity"></select></div>
+        <div class="field"><label>Année</label><select id="hmYear"></select></div>
+      </div>
+      <div id="heatmapContainer" style="overflow-x:auto; padding-bottom:6px;"></div>
+      <div class="hint" id="heatmapLegend" style="margin-top:10px;"></div>
+    </div>
+  </section>
+
+  <!-- STATS VIEW -->
+  <section class="view" id="view-stats">
+    <div class="panel">
+      <h2>Vue d'ensemble du mois</h2>
+      <p class="hint">Taux de complétion de chaque activité par rapport à son objectif, pour un mois donné.</p>
+      <div class="row" style="margin:10px 0;">
+        <div class="field"><label>Mois</label><select id="ovMonth"></select></div>
+        <div class="field"><label>Année</label><select id="ovYear"></select></div>
+      </div>
+      <div id="overviewTableWrap"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Comparaison avec le mois précédent</h2>
+      <div id="prevMonthCompareWrap"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Comparaison entre années — <select id="cmpMonth" style="display:inline-block; width:auto; margin-left:4px;"></select></h2>
+      <div id="yearCompareWrap"></div>
+    </div>
+  </section>
+
+  <!-- MANAGE VIEW -->
+  <section class="view" id="view-manage">
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Catégories</h2>
+        <div class="catlist" id="catList"></div>
+        <div class="row" style="margin-top:12px;">
+          <input type="text" id="newCatName" placeholder="Nom de la catégorie">
+          <input type="color" id="newCatColor" value="#1F6F5C">
+          <button id="addCatBtn" class="primary tiny-btn">Ajouter</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Activités</h2>
+        <p class="hint">Objectif : par défaut « tous les jours ». Change-le pour « X fois / semaine » ou « X fois / mois » si besoin.</p>
+        <div class="actlist" id="actList"></div>
+        <div class="stack" style="margin-top:12px;">
+          <div class="row">
+            <input type="text" id="newActName" placeholder="Nom de l'activité" style="flex:1;">
+          </div>
+          <div class="row">
+            <select id="newActCat" style="flex:1;"></select>
+            <button id="addActBtn" class="primary tiny-btn">Ajouter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS VIEW -->
+  <section class="view" id="view-settings">
+    <div class="panel">
+      <h2>Synchronisation GitHub</h2>
+      <p class="hint">Sauvegarde automatique vers un dépôt GitHub séparé du code. Token « fine-grained » limité à ce dépôt, permission Contents: Read/write.</p>
+      <div class="grid-2" style="margin-top:12px;">
+        <div class="field"><label>Propriétaire (owner)</label><input type="text" id="ghOwner" placeholder="ex: monpseudo"></div>
+        <div class="field"><label>Dépôt (repo)</label><input type="text" id="ghRepo" placeholder="ex: habitudes-data"></div>
+        <div class="field"><label>Branche</label><input type="text" id="ghBranch" placeholder="main"></div>
+        <div class="field"><label>Chemin du fichier</label><input type="text" id="ghPath" placeholder="data.json"></div>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Token GitHub (fine-grained)</label>
+        <input type="password" id="ghToken" placeholder="github_pat_...">
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button id="ghSaveBtn" class="primary">Enregistrer la config</button>
+        <button id="ghLoadNowBtn">Charger depuis GitHub</button>
+        <button id="ghSaveNowBtn">Sauvegarder maintenant</button>
+      </div>
+      <p class="hint" style="margin-top:10px;">Les catégories et activités que tu crées vivent uniquement dans ce fichier de données (local + dépôt GitHub privé) — rien n'est codé en dur dans les fichiers publics de l'application.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Importer un historique depuis Notion</h2>
+      <p class="hint">Import ponctuel. Exporte ta base Notion en CSV, puis importe-la ici une bonne fois pour toutes.</p>
+      <div class="stack" style="margin-top:12px;">
+        <div class="field">
+          <label>Fichier CSV</label>
+          <input type="file" id="csvFile" accept=".csv,text/csv">
+        </div>
+        <div class="field">
+          <label>Ou colle le contenu CSV directement</label>
+          <textarea id="csvText" rows="5" placeholder="Date,Sport,Lecture,Méditation&#10;2026-08-01,Yes,No,Yes"></textarea>
+        </div>
+        <div class="row">
+          <button id="csvParseBtn" class="primary">Analyser le CSV</button>
+          <label class="row" style="font-weight:400; gap:6px;"><input type="checkbox" id="csvOverwrite"> Écraser les valeurs déjà présentes</label>
+        </div>
+      </div>
+
+      <div id="csvMapZone" style="display:none; margin-top:16px;">
+        <div class="divider"></div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Colonne date</label>
+            <select id="csvDateCol"></select>
+          </div>
+          <div class="field">
+            <label>Format de date</label>
+            <select id="csvDateFormat">
+              <option value="auto">Automatique</option>
+              <option value="iso">AAAA-MM-JJ</option>
+              <option value="eu">JJ/MM/AAAA</option>
+              <option value="us">MM/JJ/AAAA</option>
+            </select>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="row between">
+          <h3 style="font-size:13.5px;">Colonnes → activités</h3>
+          <label class="row" style="font-weight:400; gap:6px; font-size:12.5px;"><input type="checkbox" id="csvInvertAll"> Tout inverser (✅ = non fait)</label>
+        </div>
+        <table id="csvMapTable"></table>
+        <div class="divider"></div>
+        <div class="row">
+          <button id="csvPreviewBtn">Aperçu</button>
+          <button id="csvImportBtn" class="primary">Importer</button>
+          <span class="hint" id="csvImportSummary"></span>
+        </div>
+        <div style="overflow-x:auto;"><table id="csvPreview"></table></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Lien de configuration</h2>
+      <p class="hint">Génère un lien contenant tes paramètres pour les recharger d'un coup sur un autre appareil. Le token est encodé dans le fragment d'URL (jamais envoyé à un serveur) — partage ce lien avec précaution.</p>
+      <div class="row" style="margin-top:10px;">
+        <button id="genLinkBtn">Générer le lien</button>
+      </div>
+      <div class="field" id="genLinkResultWrap" style="display:none; margin-top:10px;">
+        <textarea id="genLinkResult" rows="3" readonly></textarea>
+        <button id="copyLinkBtn" class="tiny-btn">Copier</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Export / Import</h2>
+      <div class="row" style="margin-top:8px;">
+        <button id="exportDataBtn">Exporter les données (JSON)</button>
+        <label class="tiny-btn" style="display:inline-flex; align-items:center;">Importer des données
+          <input type="file" id="importDataFile" accept=".json" style="display:none;">
+        </label>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="exportSettingsBtn">Exporter les paramètres (JSON)</button>
+        <label class="tiny-btn" style="display:inline-flex; align-items:center;">Importer des paramètres
+          <input type="file" id="importSettingsFile" accept=".json" style="display:none;">
+        </label>
+      </div>
+      <p class="hint" style="margin-top:8px;">L'export des paramètres contient le token GitHub en clair — ne le partage pas.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Zone dangereuse</h2>
+      <div class="row">
+        <button class="danger" id="wipeLocalBtn">Effacer les données locales</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
