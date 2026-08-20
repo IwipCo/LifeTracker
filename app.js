@@ -1,4 +1,5 @@
 /* ===================== Constantes ===================== */
+const APP_VERSION = '1.5.0';
 const LS_DATA = 'habitudes_data_v1';
 const LS_SETTINGS = 'habitudes_settings_v1';
 const LS_THEME = 'habitudes_theme';
@@ -522,6 +523,7 @@ document.getElementById('nextMonth').addEventListener('click', () => { viewMonth
 document.getElementById('todayBtn').addEventListener('click', () => { viewMonth = new Date().getMonth(); viewYear = new Date().getFullYear(); renderGrid(); });
 
 /* ===================== Vue Heatmap ===================== */
+const DOW_SHORT = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
 function populateYearSelect(sel){
   sel.innerHTML = yearsWithData().map(y => `<option value="${y}">${y}</option>`).join('');
 }
@@ -531,8 +533,14 @@ function renderHeatmapControls(){
   actSel.innerHTML = '<option value="__all__">Toutes (moyenne)</option>' +
     DATA.activities.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
   if(prev && (prev === '__all__' || DATA.activities.find(a => a.id === prev))) actSel.value = prev;
-  populateYearSelect(document.getElementById('hmYear'));
-  document.getElementById('hmYear').value = new Date().getFullYear();
+
+  const years = yearsWithData().slice().sort((a,b) => b - a);
+  const wrap = document.getElementById('hmYearChecks');
+  const prevChecked = new Set(Array.from(wrap.querySelectorAll('input:checked')).map(i => i.value));
+  wrap.innerHTML = years.map((y,i) => {
+    const isChecked = prevChecked.size ? prevChecked.has(String(y)) : (i === 0);
+    return `<label><input type="checkbox" class="hmYearCheck" value="${y}" ${isChecked ? 'checked' : ''}> ${y}</label>`;
+  }).join('');
 }
 function dayIntensity(iso, actId){
   if(iso > isoDate(new Date())) return null;
@@ -563,15 +571,7 @@ function heatColor(intensity){
   if(intensity < 1) return '#3E9A75';
   return '#1F6F5C';
 }
-function renderHeatmap(){
-  const actId = document.getElementById('hmActivity').value || '__all__';
-  const year = +document.getElementById('hmYear').value || new Date().getFullYear();
-  const container = document.getElementById('heatmapContainer');
-  if(DATA.activities.length === 0){
-    container.innerHTML = '<p class="hint">Aucune activité.</p>';
-    document.getElementById('heatmapLegend').innerHTML = '';
-    return;
-  }
+function buildHeatmapBlockHtml(year, actId){
   const dec31 = new Date(year,11,31);
   const start = startOfWeek(new Date(year,0,1));
   const weeks = [];
@@ -581,25 +581,64 @@ function renderHeatmap(){
     for(let i=0;i<7;i++){ w.push(new Date(cur)); cur.setDate(cur.getDate()+1); }
     weeks.push(w);
   }
-  let html = '<div class="heatmap-grid">';
+  // Etiquettes de mois : un label posé sur la semaine où le 1er du mois tombe
+  let monthsHtml = '';
+  let lastMonth = -1;
   weeks.forEach(w => {
-    html += '<div class="heatmap-week">';
+    const firstInYear = w.find(d => d.getFullYear() === year);
+    let label = '';
+    if(firstInYear && firstInYear.getMonth() !== lastMonth && firstInYear.getDate() <= 7){
+      label = MONTHS_FR[firstInYear.getMonth()].slice(0,3);
+      lastMonth = firstInYear.getMonth();
+    }
+    monthsHtml += `<div class="heatmap-month-label">${label}</div>`;
+  });
+  const dowHtml = DOW_SHORT.map(d => `<span>${d}</span>`).join('');
+  let gridHtml = '<div class="heatmap-grid">';
+  weeks.forEach(w => {
+    gridHtml += '<div class="heatmap-week">';
     w.forEach(d => {
-      if(d.getFullYear() !== year){ html += '<div class="heatmap-cell" style="background:transparent"></div>'; return; }
+      if(d.getFullYear() !== year){ gridHtml += '<div class="heatmap-cell" style="background:transparent"></div>'; return; }
       const iso = isoDate(d);
       const intensity = dayIntensity(iso, actId);
-      html += `<div class="heatmap-cell" style="background:${heatColor(intensity)}" title="${iso} — ${intensity==null?'à venir':Math.round(intensity*100)+'%'}"></div>`;
+      gridHtml += `<div class="heatmap-cell" style="background:${heatColor(intensity)}" title="${iso} — ${intensity==null?'à venir':Math.round(intensity*100)+'%'}"></div>`;
     });
-    html += '</div>';
+    gridHtml += '</div>';
   });
-  html += '</div>';
-  container.innerHTML = html;
+  gridHtml += '</div>';
+  return `<div class="heatmap-year-block">
+    <div class="heatmap-year-title">${year}</div>
+    <div class="heatmap-months">${monthsHtml}</div>
+    <div class="heatmap-body">
+      <div class="heatmap-dow">${dowHtml}</div>
+      ${gridHtml}
+    </div>
+  </div>`;
+}
+function renderHeatmap(){
+  const actId = document.getElementById('hmActivity').value || '__all__';
+  const container = document.getElementById('heatmapContainer');
+  if(DATA.activities.length === 0){
+    container.innerHTML = '<p class="hint">Aucune activité.</p>';
+    document.getElementById('heatmapLegend').innerHTML = '';
+    return;
+  }
+  const checkedYears = Array.from(document.querySelectorAll('.hmYearCheck:checked'))
+    .map(i => +i.value).sort((a,b) => b - a);
+  if(checkedYears.length === 0){
+    container.innerHTML = '<p class="hint">Sélectionne au moins une année.</p>';
+    document.getElementById('heatmapLegend').innerHTML = '';
+    return;
+  }
+  container.innerHTML = checkedYears.map(y => buildHeatmapBlockHtml(y, actId)).join('');
   document.getElementById('heatmapLegend').innerHTML = 'Moins ' +
     '<span class="heatmap-legend-scale">' + [0,0.2,0.5,0.8,1].map(v => `<span class="sq" style="background:${heatColor(v)}"></span>`).join('') + '</span>' +
     ' Plus';
 }
 document.getElementById('hmActivity').addEventListener('change', renderHeatmap);
-document.getElementById('hmYear').addEventListener('change', renderHeatmap);
+document.getElementById('hmYearChecks').addEventListener('change', (e) => {
+  if(e.target.classList.contains('hmYearCheck')) renderHeatmap();
+});
 
 /* ===================== Statistiques ===================== */
 function populateMonthSelect(sel){
@@ -1057,6 +1096,8 @@ function fillSettingsForm(){
   document.getElementById('ghBranch').value = g.branch || 'main';
   document.getElementById('ghPath').value = g.path || 'data.json';
   document.getElementById('ghToken').value = g.token || '';
+  const v = document.getElementById('appVersion');
+  if(v) v.textContent = APP_VERSION;
 }
 document.getElementById('ghSaveBtn').addEventListener('click', () => {
   SETTINGS.github = {
