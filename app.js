@@ -1249,6 +1249,29 @@ function renderAll(){
   if(document.getElementById('view-stats').classList.contains('active')) renderStats();
   if(document.getElementById('view-heatmap').classList.contains('active')){ renderHeatmapControls(); renderHeatmap(); }
 }
+async function autoLoadFromGithub(){
+  if(!isGithubConfigured()) return;
+  setSyncStatus('busy', 'Vérification GitHub…');
+  try{
+    const remote = await ghGetFile();
+    if(remote.notFound){
+      updateSyncStatusIdle();
+      return;
+    }
+    if(remote.sha !== SETTINGS.sha){
+      DATA = remote.content;
+      SETTINGS.sha = remote.sha;
+      persistLocal();
+      persistSettings();
+      renderAll();
+      toast('Données à jour chargées depuis GitHub');
+    }
+    updateSyncStatusIdle();
+  }catch(err){
+    console.error(err);
+    setSyncStatus('err', 'Échec de la vérification GitHub');
+  }
+}
 function init(){
   applyTheme(loadTheme());
   handleConfigLinkIfPresent();
@@ -1257,6 +1280,7 @@ function init(){
   renderHeatmapControls();
   fillSettingsForm();
   renderAll();
+  autoLoadFromGithub();
 }
 init();
 
